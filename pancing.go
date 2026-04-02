@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"math/big"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -68,25 +67,20 @@ func generateRandomPhone() string {
 
 func sendRequest(client *http.Client) {
 	phone := generateRandomPhone()
-	payload := Payload{Phone: phone}
 
-	jsonData, err := json.Marshal(payload)
+	// Pakai url.Values untuk format x-www-form-urlencoded
+	data := url.Values{}
+	data.Set("phone", phone) // sesuaikan key-nya (phone/email/dll)
+
+	// Bungkus datanya
+	req, err := http.NewRequest("POST", TargetURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		fmt.Printf("[ERROR] Failed to marshal JSON: %v\n", err)
 		return
 	}
 
-	req, err := http.NewRequest("POST", TargetURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Printf("[ERROR] Failed to create request: %v\n", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	// Menyamar sebagai browser PC biasa (Google Chrome)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "application/json, text/plain, */*")
-	req.Header.Set("Accept-Language", "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7")
-	req.Header.Set("Connection", "keep-alive")
+	// Set Header yang bener buat Form
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)...")
 
 	resp, err := client.Do(req)
 	if err != nil {
